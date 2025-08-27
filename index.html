@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Concertina Simulator</title>
+<title>Online Concertina</title>
 <style>
   body { font-family: sans-serif; text-align: center; padding: 50px; }
-  .section { display: inline-block; margin: 0 20px; }
+  .section { display: inline-block; margin: 0 20px; vertical-align: top; }
   .row { display: flex; justify-content: center; gap: 10px; margin: 5px 0; }
   .button {
     width: 50px; height: 50px; border-radius: 50%; background: #eee; 
@@ -19,10 +19,17 @@
 </head>
 <body>
 
-<h1>Concertina Simulator</h1>
+<h1>Online Concertina</h1>
+
 
 <div id="concertina">
   <div class="section" id="left">
+    <div class="row">
+      <div class="button" data-key="2"><div class="key">2</div><div class="note">F#5</div></div>
+      <div class="button" data-key="3"><div class="key">3</div><div class="note">F5</div></div>
+      <div class="button" data-key="4"><div class="key">4</div><div class="note">A5</div></div>
+      <div class="button" data-key="5"><div class="key">5</div><div class="note">Ab5</div></div>
+    </div>
     <div class="row">
       <div class="button" data-key="w"><div class="key">W</div><div class="note">Bb4</div></div>
       <div class="button" data-key="e"><div class="key">E</div><div class="note">B4</div></div>
@@ -45,6 +52,12 @@
 
   <div class="section" id="right">
     <div class="row">
+      <div class="button" data-key="6"><div class="key">6</div><div class="note">Eb5</div></div>
+      <div class="button" data-key="7"><div class="key">7</div><div class="note">E5</div></div>
+      <div class="button" data-key="8"><div class="key">8</div><div class="note">G5</div></div>
+      <div class="button" data-key="9"><div class="key">9</div><div class="note">G#5</div></div>
+    </div>
+    <div class="row">
       <div class="button" data-key="y"><div class="key">Y</div><div class="note">Ab4</div></div>
       <div class="button" data-key="u"><div class="key">U</div><div class="note">A4</div></div>
       <div class="button" data-key="i"><div class="key">I</div><div class="note">C5</div></div>
@@ -65,7 +78,22 @@
   </div>
 </div>
 
+<br>
+
+<div id="controls">
+  <label>Waveform:</label>
+  <button onclick="setWaveform('sine')">Sine</button>
+  <button onclick="setWaveform('square')">Square</button>
+  <button onclick="setWaveform('triangle')">Triangle</button>
+  <button onclick="setWaveform('sawtooth')">Sawtooth</button>
+</div>
+
 <script>
+let currentWaveform = 'sine';
+function setWaveform(type) {
+  currentWaveform = type;
+}
+
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
@@ -93,10 +121,17 @@ const keyMap = {
   'y': 415.30,  // Ab4
   'u': 440.00,  // A4
   'i': 523.25,  // C5
-  'o': 554.37   // C#5
+  'o': 554.37,  // C#5
+  '2': 739.99,  // F#5
+  '3': 698.46,  // F5
+  '4': 880.00,  // A5
+  '5': 830.61,  // Ab5
+  '6': 622.25,  // Eb5
+  '7': 659.25,  // E5
+  '8': 783.99,  // G5
+  '9': 830.61   // G#5
 };
 
-// Track active oscillators for polyphony
 const activeOscillators = {};
 
 function playNote(key) {
@@ -104,13 +139,19 @@ function playNote(key) {
 
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
-
-  osc.type = 'sine';
+  
+  osc.type = currentWaveform;
   osc.frequency.value = keyMap[key];
-
-  // Smooth fade-in (attack)
+  
+  // Frequency-dependent gain
+  let baseGain = 0.3;
+  let freq = keyMap[key];
+  let gainLevel = baseGain * (100 / freq);
+  gainLevel = Math.min(baseGain, gainLevel); // so lows aren’t too loud
+  
+  // Fade-in
   gain.gain.setValueAtTime(0, audioCtx.currentTime);
-  gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.01); // 10ms attack
+  gain.gain.linearRampToValueAtTime(gainLevel, audioCtx.currentTime + 0.01);
 
   osc.connect(gain).connect(audioCtx.destination);
   osc.start();
@@ -125,11 +166,10 @@ function stopNote(key) {
   const obj = activeOscillators[key];
   if (!obj) return;
 
-  // Smooth fade-out (release)
   const now = audioCtx.currentTime;
   obj.gain.gain.cancelScheduledValues(now);
   obj.gain.gain.setValueAtTime(obj.gain.gain.value, now);
-  obj.gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05); // 50ms release
+  obj.gain.gain.linearRampToValueAtTime(0, now + 0.05);
   obj.osc.stop(now + 0.05);
 
   delete activeOscillators[key];
