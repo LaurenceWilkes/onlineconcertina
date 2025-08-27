@@ -180,6 +180,23 @@ function stopNote(key) {
 
 document.addEventListener('keydown', e => playNote(e.key));
 document.addEventListener('keyup', e => stopNote(e.key));
+
+// Mouse support
+document.querySelectorAll('.button').forEach(button => {
+  const key = button.dataset.key;
+
+  button.addEventListener('mousedown', () => playNote(key));
+  button.addEventListener('mouseup', () => stopNote(key));
+  button.addEventListener('mouseleave', () => stopNote(key));
+
+  // Touch support (phones/tablets)
+  button.addEventListener('touchstart', e => {
+    e.preventDefault(); // stops ghost mouse events
+    playNote(key);
+  });
+  button.addEventListener('touchend', () => stopNote(key));
+});
+
 </script>
 
 </body>
