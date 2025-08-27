@@ -15,6 +15,25 @@
   .button.active { background: yellow; }
   .key { font-size: 14px; }
   .note { font-size: 12px; }
+  @media (max-width: 768px) {
+    body {
+      padding: 10px;
+    }
+  
+    .row {
+      gap: 5px;
+    }
+  
+    .button {
+      width: 12vw;       /* scale with screen width */
+      height: 12vw;      /* keeps them square */
+      max-width: 50px;   /* prevent them from getting too big */
+      max-height: 50px;
+    }
+  
+    .key { font-size: 3vw; }
+    .note { font-size: 2.5vw; }
+  }
 </style>
 </head>
 <body>
