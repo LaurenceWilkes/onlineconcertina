@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Online Concertina</title>
+<style>
+  body { font-family: sans-serif; text-align: center; padding: 50px; }
+  #concertina { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .button {
+    width: 60px; height: 60px; border-radius: 50%; background: #eee; 
+    display: flex; align-items: center; justify-content: center; font-weight: bold; 
+    border: 2px solid #333; user-select: none; transition: background 0.1s;
+  }
+  .button.active { background: yellow; }
+</style>
+</head>
+<body>
+
+<h1>Online Concertina</h1>
+<div id="concertina">
+  <div class="button" data-key="f">F<br>C</div>
+  <div class="button" data-key="g">G<br>C#</div>
+  <div class="button" data-key="j">J<br>D</div>
+  <div class="button" data-key="d">D<br>E</div>
+  <div class="button" data-key="k">K<br>F</div>
+  <div class="button" data-key="r">R<br>G</div>
+  <div class="button" data-key="u">U<br>A</div>
+  <div class="button" data-key="e">E<br>B</div>
+  <div class="button" data-key="i">I<br>C</div>
+</div>
+
+<script>
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+// Mapping keys to frequencies (middle C = 261.63 Hz)
+const keyMap = {
+  'f': 261.63,  // C
+  'g': 277.18,  // C#
+  'j': 293.66,  // D
+  'd': 329.63,  // E
+  'k': 349.23,  // F
+  'r': 392.00,  // G
+  'u': 440.00,  // A
+  'e': 493.88,  // B
+  'i': 523.25   // next C
+};
+
+// Track active oscillators for polyphony
+const activeOscillators = {};
+
+function playNote(key) {
+  if (!keyMap[key] || activeOscillators[key]) return; // Already playing
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = 'sine';
+  osc.frequency.value = keyMap[key];
+  gain.gain.value = 0.3; // volume
+
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+
+  activeOscillators[key] = {osc, gain};
+  
+  // Highlight button
+  const button = document.querySelector(`.button[data-key="${key}"]`);
+  if (button) button.classList.add('active');
+}
+
+function stopNote(key) {
+  const obj = activeOscillators[key];
+  if (!obj) return;
+  obj.gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+  obj.osc.stop(audioCtx.currentTime + 0.05);
+  delete activeOscillators[key];
+
+  // Remove highlight
+  const button = document.querySelector(`.button[data-key="${key}"]`);
+  if (button) button.classList.remove('active');
+}
+
+document.addEventListener('keydown', (e) => {
+  playNote(e.key);
+});
+
+document.addEventListener('keyup', (e) => {
+  stopNote(e.key);
+});
+</script>
+
+</body>
+</html>
