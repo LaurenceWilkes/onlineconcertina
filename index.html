@@ -2,69 +2,121 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Online Concertina</title>
+<title>Concertina Simulator</title>
 <style>
   body { font-family: sans-serif; text-align: center; padding: 50px; }
-  #concertina { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .section { display: inline-block; margin: 0 20px; }
+  .row { display: flex; justify-content: center; gap: 10px; margin: 5px 0; }
   .button {
-    width: 60px; height: 60px; border-radius: 50%; background: #eee; 
-    display: flex; align-items: center; justify-content: center; font-weight: bold; 
-    border: 2px solid #333; user-select: none; transition: background 0.1s;
+    width: 50px; height: 50px; border-radius: 50%; background: #eee; 
+    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+    font-weight: bold; border: 2px solid #333; user-select: none; transition: background 0.1s;
   }
   .button.active { background: yellow; }
+  .key { font-size: 14px; }
+  .note { font-size: 12px; }
 </style>
 </head>
 <body>
 
-<h1>Online Concertina</h1>
+<h1>Concertina Simulator</h1>
+
 <div id="concertina">
-  <div class="button" data-key="f">F<br>C</div>
-  <div class="button" data-key="g">G<br>C#</div>
-  <div class="button" data-key="j">J<br>D</div>
-  <div class="button" data-key="d">D<br>E</div>
-  <div class="button" data-key="k">K<br>F</div>
-  <div class="button" data-key="r">R<br>G</div>
-  <div class="button" data-key="u">U<br>A</div>
-  <div class="button" data-key="e">E<br>B</div>
-  <div class="button" data-key="i">I<br>C</div>
+  <div class="section" id="left">
+    <div class="row">
+      <div class="button" data-key="w"><div class="key">W</div><div class="note">Bb4</div></div>
+      <div class="button" data-key="e"><div class="key">E</div><div class="note">B4</div></div>
+      <div class="button" data-key="r"><div class="key">R</div><div class="note">D5</div></div>
+      <div class="button" data-key="t"><div class="key">T</div><div class="note">D#5</div></div>
+    </div>
+    <div class="row">
+      <div class="button" data-key="s"><div class="key">S</div><div class="note">Eb4</div></div>
+      <div class="button" data-key="d"><div class="key">D</div><div class="note">E4</div></div>
+      <div class="button" data-key="f"><div class="key">F</div><div class="note">G4</div></div>
+      <div class="button" data-key="g"><div class="key">G</div><div class="note">G#4</div></div>
+    </div>
+    <div class="row">
+      <div class="button" data-key="z"><div class="key">Z</div><div class="note">Ab3</div></div>
+      <div class="button" data-key="x"><div class="key">X</div><div class="note">A3</div></div>
+      <div class="button" data-key="c"><div class="key">C</div><div class="note">C4</div></div>
+      <div class="button" data-key="v"><div class="key">V</div><div class="note">C#4</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="right">
+    <div class="row">
+      <div class="button" data-key="y"><div class="key">Y</div><div class="note">Ab4</div></div>
+      <div class="button" data-key="u"><div class="key">U</div><div class="note">A4</div></div>
+      <div class="button" data-key="i"><div class="key">I</div><div class="note">C5</div></div>
+      <div class="button" data-key="o"><div class="key">O</div><div class="note">C#5</div></div>
+    </div>
+    <div class="row">
+      <div class="button" data-key="h"><div class="key">H</div><div class="note">D#4</div></div>
+      <div class="button" data-key="j"><div class="key">J</div><div class="note">D4</div></div>
+      <div class="button" data-key="k"><div class="key">K</div><div class="note">F4</div></div>
+      <div class="button" data-key="l"><div class="key">L</div><div class="note">F#4</div></div>
+    </div>
+    <div class="row">
+      <div class="button" data-key="n"><div class="key">N</div><div class="note">F3</div></div>
+      <div class="button" data-key="m"><div class="key">M</div><div class="note">G3</div></div>
+      <div class="button" data-key=","><div class="key">,</div><div class="note">B3</div></div>
+      <div class="button" data-key="."><div class="key">.</div><div class="note">Bb3</div></div>
+    </div>
+  </div>
 </div>
 
 <script>
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
-// Mapping keys to frequencies (middle C = 261.63 Hz)
 const keyMap = {
-  'f': 261.63,  // C
-  'g': 277.18,  // C#
-  'j': 293.66,  // D
-  'd': 329.63,  // E
-  'k': 349.23,  // F
-  'r': 392.00,  // G
-  'u': 440.00,  // A
-  'e': 493.88,  // B
-  'i': 523.25   // next C
+  'n': 174.61,  // F3
+  'm': 196.00,  // G3
+  ',': 246.94,  // B3
+  '.': 233.08,  // Bb3
+  'c': 261.63,  // C4
+  'v': 277.18,  // C#4
+  'z': 207.65,  // Ab3
+  'x': 220.00,  // A3
+  'h': 311.13,  // D#4
+  'j': 293.66,  // D4
+  'k': 349.23,  // F4
+  'l': 369.99,  // F#4
+  's': 311.13,  // Eb4
+  'd': 329.63,  // E4
+  'f': 392.00,  // G4
+  'g': 415.30,  // G#4
+  'w': 466.16,  // Bb4
+  'e': 493.88,  // B4
+  'r': 587.33,  // D5
+  't': 622.25,  // D#5
+  'y': 415.30,  // Ab4
+  'u': 440.00,  // A4
+  'i': 523.25,  // C5
+  'o': 554.37   // C#5
 };
 
 // Track active oscillators for polyphony
 const activeOscillators = {};
 
 function playNote(key) {
-  if (!keyMap[key] || activeOscillators[key]) return; // Already playing
+  if (!keyMap[key] || activeOscillators[key]) return;
 
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
 
   osc.type = 'sine';
   osc.frequency.value = keyMap[key];
-  gain.gain.value = 0.3; // volume
+
+  // Smooth fade-in (attack)
+  gain.gain.setValueAtTime(0, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.01); // 10ms attack
 
   osc.connect(gain).connect(audioCtx.destination);
   osc.start();
 
   activeOscillators[key] = {osc, gain};
-  
-  // Highlight button
+
   const button = document.querySelector(`.button[data-key="${key}"]`);
   if (button) button.classList.add('active');
 }
@@ -72,22 +124,22 @@ function playNote(key) {
 function stopNote(key) {
   const obj = activeOscillators[key];
   if (!obj) return;
-  obj.gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-  obj.osc.stop(audioCtx.currentTime + 0.05);
+
+  // Smooth fade-out (release)
+  const now = audioCtx.currentTime;
+  obj.gain.gain.cancelScheduledValues(now);
+  obj.gain.gain.setValueAtTime(obj.gain.gain.value, now);
+  obj.gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05); // 50ms release
+  obj.osc.stop(now + 0.05);
+
   delete activeOscillators[key];
 
-  // Remove highlight
   const button = document.querySelector(`.button[data-key="${key}"]`);
   if (button) button.classList.remove('active');
 }
 
-document.addEventListener('keydown', (e) => {
-  playNote(e.key);
-});
-
-document.addEventListener('keyup', (e) => {
-  stopNote(e.key);
-});
+document.addEventListener('keydown', e => playNote(e.key));
+document.addEventListener('keyup', e => stopNote(e.key));
 </script>
 
 </body>
