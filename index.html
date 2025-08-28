@@ -15,6 +15,16 @@
   .button.active { background: yellow; }
   .key { font-size: 14px; }
   .note { font-size: 12px; }
+  .waveform-btn {
+    margin: 0 5px;
+    padding: 5px 10px;
+    border: 2px solid #333;
+    border-radius: 6px;
+    background: #eee;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .waveform-btn.active { background: yellow; }
   @media (max-width: 768px) {
     body {
       padding: 10px;
@@ -101,17 +111,29 @@
 
 <div id="controls">
   <label>Waveform:</label>
-  <button onclick="setWaveform('sine')">Sine</button>
-  <button onclick="setWaveform('square')">Square</button>
-  <button onclick="setWaveform('triangle')">Triangle</button>
-  <button onclick="setWaveform('sawtooth')">Sawtooth</button>
+  <button class="waveform-btn" data-wave="sine">Sine</button>
+  <button class="waveform-btn" data-wave="square">Square</button>
+  <button class="waveform-btn" data-wave="triangle">Triangle</button>
+  <button class="waveform-btn" data-wave="sawtooth">Sawtooth</button>
 </div>
 
 <script>
 let currentWaveform = 'sine';
+
 function setWaveform(type) {
   currentWaveform = type;
+  document.querySelectorAll('.waveform-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.wave === type);
+  });
 }
+
+// initialise the default button highlight
+setWaveform('sine');
+
+// attach listeners
+document.querySelectorAll('.waveform-btn').forEach(btn => {
+  btn.addEventListener('click', () => setWaveform(btn.dataset.wave));
+});
 
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
