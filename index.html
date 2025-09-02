@@ -18,12 +18,14 @@
   .button.active { background: yellow; }
   .key { font-size: 14px; }
   .note { font-size: 12px; }
-  .waveform-btn, .reverb-btn {
+
+  .waveform-btn, .reverb-btn, .octave-btn {
     margin: 0 5px; padding: 5px 10px; border: 2px solid #333;
     border-radius: 6px; background: #eee; cursor: pointer;
     transition: background 0.1s;
   }
-  .waveform-btn.active, .reverb-btn.active { background: yellow; }
+  .waveform-btn.active, .reverb-btn.active, .octave-btn.active { background: yellow; }
+
   @media (max-width: 768px) {
     body { padding: 10px; }
     .row { gap: 5px; }
@@ -105,10 +107,15 @@
   <button class="waveform-btn" data-wave="sawtooth">Sawtooth</button>
   <br><br>
   <button class="reverb-btn" id="reverbToggle">Reverb: Off</button>
+  <button class="octave-btn" id="octaveToggle">Octave: Off</button>
 </div>
 
 <script>
+/* state */
 let currentWaveform = 'sine';
+let reverbOn = false;
+let octaveDown = false; // when true, notes play one octave lower (freq * 0.5)
+
 function setWaveform(type) {
   currentWaveform = type;
   document.querySelectorAll('.waveform-btn').forEach(btn => {
@@ -116,23 +123,20 @@ function setWaveform(type) {
   });
 }
 setWaveform('sine');
+document.querySelectorAll('.waveform-btn').forEach(btn =>
+  btn.addEventListener('click', () => setWaveform(btn.dataset.wave))
+);
 
-// waveform button listeners
-document.querySelectorAll('.waveform-btn').forEach(btn => {
-  btn.addEventListener('click', () => setWaveform(btn.dataset.wave));
-});
-
-// Audio setup
+/* audio setup */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
-// --- Reverb Setup (simple feedback delay) ---
-let reverbOn = false;
+/* simple artificial reverb = feedback delay */
 const delayNode = audioCtx.createDelay();
-delayNode.delayTime.value = 0.25; // 250ms delay
+delayNode.delayTime.value = 0.25;
 
 const feedback = audioCtx.createGain();
-feedback.gain.value = 0.35; // feedback amount
+feedback.gain.value = 0.35;
 
 delayNode.connect(feedback);
 feedback.connect(delayNode);
@@ -140,8 +144,9 @@ feedback.connect(delayNode);
 const reverbGain = audioCtx.createGain();
 reverbGain.gain.value = 0.3;
 feedback.connect(reverbGain);
+reverbGain.connect(audioCtx.destination); // connect once (not per-note)
 
-// Toggle reverb
+/* reverb toggle UI */
 const reverbBtn = document.getElementById('reverbToggle');
 reverbBtn.addEventListener('click', () => {
   reverbOn = !reverbOn;
@@ -149,7 +154,16 @@ reverbBtn.addEventListener('click', () => {
   reverbBtn.classList.toggle("active", reverbOn);
 });
 
-// Note map
+/* octave toggle UI */
+const octaveBtn = document.getElementById('octaveToggle');
+function toggleOctave() {
+  octaveDown = !octaveDown;
+  octaveBtn.textContent = 'Octave: ' + (octaveDown ? 'Down' : 'Off');
+  octaveBtn.classList.toggle('active', octaveDown);
+}
+octaveBtn.addEventListener('click', toggleOctave);
+
+/* mapping */
 const keyMap = {
   'n': 174.61, 'm': 196.00, ',': 246.94, '.': 233.08,
   'c': 261.63, 'v': 277.18, 'z': 207.65, 'x': 220.00,
@@ -161,66 +175,86 @@ const keyMap = {
   '6': 622.25, '7': 659.25, '8': 783.99, '9': 830.61
 };
 
-const activeOscillators = {};
+const activeOscillators = Object.create(null);
 
-function playNote(key) {
+function selectButton(key) {
+  return document.querySelector(`.button[data-key="${CSS.escape(String(key))}"]`);
+}
+
+function playNote(rawKey) {
+  const key = String(rawKey).toLowerCase();
   if (!keyMap[key] || activeOscillators[key]) return;
+
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
 
   osc.type = currentWaveform;
-  osc.frequency.value = keyMap[key];
 
-  let baseGain = 0.3;
-  let freq = keyMap[key];
-  let gainLevel = baseGain * (100 / freq);
-  gainLevel = Math.min(baseGain, gainLevel);
+  const origFreq = keyMap[key];
+  const freq = octaveDown ? origFreq * 0.5 : origFreq;
+  osc.frequency.value = freq;
+
+  const baseGain = 0.3;
+  const gainLevel = Math.min(baseGain, baseGain * (100 / origFreq));
 
   gain.gain.setValueAtTime(0, audioCtx.currentTime);
   gain.gain.linearRampToValueAtTime(gainLevel, audioCtx.currentTime + 0.01);
 
-  // connect with/without reverb
-  if (reverbOn) {
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    gain.connect(delayNode);
-    reverbGain.connect(audioCtx.destination);
-  } else {
-    osc.connect(gain).connect(audioCtx.destination);
-  }
+  // connect: dry always, wet only when reverbOn
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  if (reverbOn) gain.connect(delayNode);
 
   osc.start();
-  activeOscillators[key] = {osc, gain};
 
-  const button = document.querySelector(`.button[data-key="${key}"]`);
+  activeOscillators[key] = { osc, gain };
+
+  const button = selectButton(key);
   if (button) button.classList.add('active');
 }
 
-function stopNote(key) {
+function stopNote(rawKey) {
+  const key = String(rawKey).toLowerCase();
   const obj = activeOscillators[key];
   if (!obj) return;
+
   const now = audioCtx.currentTime;
   obj.gain.gain.cancelScheduledValues(now);
   obj.gain.gain.setValueAtTime(obj.gain.gain.value, now);
   obj.gain.gain.linearRampToValueAtTime(0, now + 0.05);
   obj.osc.stop(now + 0.05);
+
   delete activeOscillators[key];
-  const button = document.querySelector(`.button[data-key="${key}"]`);
+
+  const button = selectButton(key);
   if (button) button.classList.remove('active');
 }
 
-// Keyboard input
-document.addEventListener('keydown', e => playNote(e.key));
-document.addEventListener('keyup', e => stopNote(e.key));
+/* input handling */
 
-// Mouse & touch
+// spacebar toggles octave (only once per press)
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !e.repeat) {
+    e.preventDefault(); // avoid page scroll
+    toggleOctave();
+    return;
+  }
+  playNote(e.key);
+});
+
+document.addEventListener('keyup', e => {
+  if (e.code === 'Space') return; // don't try to stop space as a note
+  stopNote(e.key);
+});
+
+/* mouse & touch support */
 document.querySelectorAll('.button').forEach(button => {
   const key = button.dataset.key;
   button.addEventListener('mousedown', () => playNote(key));
-  button.addEventListener('mouseup', () => stopNote(key));
-  button.addEventListener('mouseleave', () => stopNote(key));
-  button.addEventListener('touchstart', e => { e.preventDefault(); playNote(key); });
-  button.addEventListener('touchend', () => stopNote(key));
+  button.addEventListener('mouseup',   () => stopNote(key));
+  button.addEventListener('mouseleave',() => stopNote(key));
+  button.addEventListener('touchstart', e => { e.preventDefault(); playNote(key); }, { passive: false });
+  button.addEventListener('touchend',   () => stopNote(key));
 });
 </script>
 </body>
