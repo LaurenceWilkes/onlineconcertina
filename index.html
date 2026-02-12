@@ -146,7 +146,7 @@ reverbGain.gain.value = 0.3;
 feedback.connect(reverbGain);
 reverbGain.connect(audioCtx.destination); // connect once (not per-note)
 
-/* reverb toggle UI */
+/* reverb toggle */
 const reverbBtn = document.getElementById('reverbToggle');
 reverbBtn.addEventListener('click', () => {
   reverbOn = !reverbOn;
@@ -154,7 +154,7 @@ reverbBtn.addEventListener('click', () => {
   reverbBtn.classList.toggle("active", reverbOn);
 });
 
-/* octave toggle UI */
+/* octave toggle */
 const octaveBtn = document.getElementById('octaveToggle');
 function toggleOctave() {
   octaveDown = !octaveDown;
@@ -232,10 +232,9 @@ function stopNote(rawKey) {
 
 /* input handling */
 
-// spacebar toggles octave (only once per press)
 document.addEventListener('keydown', e => {
   if (e.code === 'Space' && !e.repeat) {
-    e.preventDefault(); // avoid page scroll
+    e.preventDefault(); // avoid scroll
     toggleOctave();
     return;
   }
